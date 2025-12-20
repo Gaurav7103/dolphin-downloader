@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Dolphin Downloader</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b1e2d;
+      color: #fff
+    }
+
+    .box {
+      background: #12293a;
+      padding: 16px;
+      margin: 16px;
+      border-radius: 12px
+    }
+
+    .row {
+      display: flex;
+      gap: 8px
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: none
+    }
+
+    .icon {
+      width: 48px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer
+    }
+
+    .search {
+      background: #2563eb;
+      color: #fff
+    }
+
+    .preview {
+      display: none;
+      margin-top: 12px
+    }
+
+    .preview img {
+      width: 100%;
+      border-radius: 10px
+    }
+
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0b1e2d;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 6px
+    }
+
+    .dl {
+      background: #22c55e;
+      color: #022c22;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 18px;
+      cursor: pointer
+    }
+
+    .status {
+      margin-top: 8px;
+      color: #9ca3af;
+      font-size: 14px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <div class="row">
+      <input id="url" placeholder="Paste YouTube / Instagram / Facebook link">
+      <button class="icon search" onclick="analyze()">🔍</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="preview" id="preview">
+      <img id="thumb">
+      <h3 id="title"></h3>
+      <p id="uploader"></p>
+      <div id="qualities"></div>
+    </div>
+  </div>
+
+  <script>
+    function analyze() {
+      const url = document.getElementById("url").value;
+      if (!url) { alert("Paste a link"); return; }
+      document.getElementById("status").innerText = "Analyzing…";
+      fetch(`/analyze?url=${encodeURIComponent(url)}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.error) throw d.error;
+          document.getElementById("thumb").src = d.thumbnail;
+          document.getElementById("title").innerText = d.title;
+          document.getElementById("uploader").innerText = "By: " + d.uploader;
+
+          const q = document.getElementById("qualities");
+          q.innerHTML = "";
+
+          /* 🎵 MP3 */
+          q.innerHTML += `
+      <div class="item">
+        <span>MP3 (best)</span>
+        <button class="dl" onclick="downloadAudio()">⬇️</button>
+      </div>`;
+
+          /* 🎬 MP4 */
+          d.qualities.forEach(x => {
+            q.innerHTML += `
+        <div class="item">
+          <span>${x}p</span>
+          <button class="dl" onclick="downloadVideo(${x})">⬇️</button>
+        </div>`;
+          });
+
+          document.getElementById("preview").style.display = "block";
+          document.getElementById("status").innerText = "Select format to download";
+        })
+        .catch(() => {
+          document.getElementById("status").innerText = "Invalid or private link";
+        });
+    }
+
+    function downloadAudio() {
+      document.getElementById("status").innerText = "Downloading MP3…";
+      window.location.href =
+        `/download?url=${encodeURIComponent(document.getElementById("url").value)}&type=audio`;
+    }
+
+    function downloadVideo(q) {
+      document.getElementById("status").innerText = "Downloading MP4…";
+      window.location.href =
+        `/download?url=${encodeURIComponent(document.getElementById("url").value)}&type=video&q=${q}`;
+    }
+  </script>
+</body>
+
+</html>
